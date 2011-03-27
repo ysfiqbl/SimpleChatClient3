@@ -4,6 +4,8 @@
 
 package lk.sde.common;
 
+import java.util.Observer;
+
 /**
  * This interface implements the abstract method used to display
  * objects onto the client or server UIs.
@@ -12,7 +14,7 @@ package lk.sde.common;
  * @author Dr Timothy C. Lethbridge
  * @version July 2000
  */
-public interface ChatIF 
+public interface ChatIF extends Observer
 {
   /**
    * Method that when overridden is used to display objects onto

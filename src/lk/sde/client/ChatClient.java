@@ -4,6 +4,7 @@
 
 package lk.sde.client;
 
+import lk.sde.ocsf.client.ObservableClient;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,7 +26,7 @@ import static lk.sde.common.ChatClientCommandFilter.*;
  * @author Fran&ccedil;ois B&eacute;langer
  * @version July 2000
  */
-public class ChatClient extends AbstractClient
+public class ChatClient extends ObservableClient
 {
   //Instance variables **********************************************
   
@@ -33,7 +34,6 @@ public class ChatClient extends AbstractClient
    * The interface type variable.  It allows the implementation of 
    * the display method in the client.
    */
-  ChatIF clientUI;
   ChatClientCommandFilter chatClientCommandFilter;
 
   String loginId;
@@ -56,7 +56,7 @@ public class ChatClient extends AbstractClient
     throws IOException 
   {
     super(host, port); //Call the superclass constructor
-    this.clientUI = clientUI;
+    this.addObserver(clientUI);
     this.chatClientCommandFilter =  new ChatClientCommandFilter();
     //openConnection();
   }
@@ -69,9 +69,11 @@ public class ChatClient extends AbstractClient
    *
    * @param msg The message from the server.
    */
+    @Override
   public void handleMessageFromServer(Object msg) 
   {
-    clientUI.display(msg.toString());
+    //clientUI.display(msg.toString());
+      super.handleMessageFromServer(msg);
     if (msg.toString().startsWith("Private Message") && this.monitorOn && !this.monitors.isEmpty()) {
             try {
                 System.out.println(getMonitorListAsString());
@@ -121,10 +123,13 @@ public class ChatClient extends AbstractClient
         catch(IOException e)
         {
             if(LOGIN.equals(command)){
-                clientUI.display("Cannot contact the server. Please try again later.");
+                setChanged();
+                notifyObservers("CANNOT Contact Server");
+                //clientUI.display("Cannot contact the server. Please try again later.");
             }
             else{
-                clientUI.display("You need to be logged on to send a message to the server. Use the #login command to connect to the server.");
+                //clientUI.display("You need to be logged on to send a message to the server. Use the #login command to connect to the server.");
+                notifyObservers("CANNOT Contact Server");
             }
         }
   }
@@ -184,7 +189,7 @@ public class ChatClient extends AbstractClient
                 this.sendToServer("#login " + loginId);
             }
             else{
-              clientUI.display("You are already logged in.");
+              sendMessageToDisplay("You are already logged in.");
             }
             return;
         }        
@@ -194,18 +199,18 @@ public class ChatClient extends AbstractClient
                 this.closeConnection();
             }
             else{
-               clientUI.display("You are already logged off.");
+               sendMessageToDisplay("You are already logged off.");
             }
             return;
         }
 
         if(GET_HOST.equals(command)){
-            clientUI.display("HOST: "+this.getHost());
+            sendMessageToDisplay("HOST: "+this.getHost());
             return;
         }
 
         if(GET_PORT.equals(command)){
-            clientUI.display("PORT: "+this.getPort());
+            sendMessageToDisplay("PORT: "+this.getPort());
             return;
         }
 
@@ -213,14 +218,14 @@ public class ChatClient extends AbstractClient
             String parameter = chatClientCommandFilter.getSetHostParameter(inputArray);
 
             if(parameter==null){
-                clientUI.display("Please specify the host. Usage:#sethost <host>");
+                sendMessageToDisplay("Please specify the host. Usage:#sethost <host>");
             }
             else{
                 if(!isConnected()){
                     this.setHost(parameter);
                 }
                 else{
-                    clientUI.display("You need to log off in order to set the host.");
+                    sendMessageToDisplay("You need to log off in order to set the host.");
                 }
             }
 
@@ -231,17 +236,17 @@ public class ChatClient extends AbstractClient
             int parameter = chatClientCommandFilter.getSetPortParameter(inputArray);
 
             if(parameter==-1){
-                clientUI.display("Please specify the port.Usage:#setport <port>");
+                sendMessageToDisplay("Please specify the port.Usage:#setport <port>");
             }
             else if(parameter==-2){
-                clientUI.display("Port should be a numeric value.");
+                sendMessageToDisplay("Port should be a numeric value.");
             }
             else{
                 if(!isConnected()){
                     this.setPort(parameter);
                 }
                 else{
-                    clientUI.display("You need to log off in order to set the port.");
+                    sendMessageToDisplay("You need to log off in order to set the port.");
                 }
             }
 
@@ -249,7 +254,7 @@ public class ChatClient extends AbstractClient
         }
 
         if(QUIT.equals(command)){
-            clientUI.display("Disconnecting from the server and exiting the chat client.");
+            sendMessageToDisplay("Disconnecting from the server and exiting the chat client.");
             isQuit=true;
             this.quit();            
             return;
@@ -267,7 +272,7 @@ public class ChatClient extends AbstractClient
 
         private void processMonitorCommand(String[] inputArray) {
         if (inputArray.length == 1) {
-            clientUI.display("Invalid #monitor command. Options available add <user>, remove <user>"
+            sendMessageToDisplay("Invalid #monitor command. Options available add <user>, remove <user>"
                     + "list, start, stop");
             return;
         }
@@ -275,7 +280,7 @@ public class ChatClient extends AbstractClient
         String option = inputArray[1];
         if (option.equals("add")) {
             if (inputArray.length < 3) {
-                clientUI.display("Invalid #monitor add command. Usage #monitor add <userId>");
+                sendMessageToDisplay("Invalid #monitor add command. Usage #monitor add <userId>");
                 return;
             }
             String loginID = inputArray[2];
@@ -283,7 +288,7 @@ public class ChatClient extends AbstractClient
             return;
         } else if (option.equals("remove")) {
             if (inputArray.length < 3) {
-                clientUI.display("Invalid #monitor add command. Usage #monitor add <userId>");
+                sendMessageToDisplay("Invalid #monitor add command. Usage #monitor add <userId>");
                 return;
             }
             String loginID = inputArray[2];
@@ -291,7 +296,7 @@ public class ChatClient extends AbstractClient
             return;
         } else if (option.equals("list")) {
             if (monitors.isEmpty()) {
-                clientUI.display("monitor list is empty");
+                sendMessageToDisplay("monitor list is empty");
                 return;
             } else {
                 StringBuilder monitorList = new StringBuilder();
@@ -299,16 +304,16 @@ public class ChatClient extends AbstractClient
                     monitorList.append(it.next().toString() + ",");
                 }
                 monitorList.deleteCharAt(monitorList.length()-1);
-                clientUI.display("monitor list is : " + monitorList);
+                sendMessageToDisplay("monitor list is : " + monitorList);
                 return;
             }
         } else if (option.equals("start")) {
             this.monitorOn = true;
-            clientUI.display("monitoring started.");
+            sendMessageToDisplay("monitoring started.");
             return;
         } else if (option.equals("stop")) {
             this.monitorOn = false;
-            clientUI.display("monitoring stopped.");
+            sendMessageToDisplay("monitoring stopped.");
             return;
         }
     }
@@ -327,5 +332,9 @@ public class ChatClient extends AbstractClient
         return monitorsStr.toString();
     }
 
+    private void sendMessageToDisplay(String msg){
+        setChanged();
+        notifyObservers(msg);
+    }
 }
 //End of ChatClient class

@@ -5,6 +5,7 @@ package lk.sde.simplechatclient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Observable;
 import lk.sde.client.ChatClient;
 import lk.sde.common.ChatIF;
 
@@ -101,6 +102,10 @@ public class ClientConsole implements ChatIF
     System.out.println("> " + message);
   }
 
+  public void update(Observable o, Object o1) {
+        display(o1.toString());
+  }
+
   
   //Class methods ***************************************************
 
@@ -139,5 +144,7 @@ public class ClientConsole implements ChatIF
     chat.display("Welcome "+chat.client.getLoginId());
     chat.accept();  //Wait for console data
   }
+
+
 }
 //End of ConsoleChat class
